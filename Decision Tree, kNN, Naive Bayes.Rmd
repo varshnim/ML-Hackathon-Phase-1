@@ -1,0 +1,92 @@
+---
+title: "Decision Tree, kNN, Naive Bayes"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+title: "Hackathon Phase 1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+require(tree)
+require(e1071)
+require(class)
+```
+
+#Reading the data set
+```{r}
+mds=read.csv("Model_Data - Copy.csv",header=TRUE)
+mds1=read.csv("Model_Data - Copy.csv",header=TRUE)
+```
+
+#Sample splitting
+```{r}
+set.seed(6)
+sp=sample.int(n=nrow(mds),size=floor(.80*nrow(mds)),replace=FALSE)
+mds_train=mds[sp,]
+mds_test=mds[-sp,]
+```
+
+#Decision Tree
+```{r}
+#Building the Decision Tree
+
+dtree=tree(comp_level~.,data=mds_train)
+plot(dtree)
+text(dtree)
+
+#Predicting using the Decision Tree
+dt_predict=predict(dtree,mds_test)
+
+#Confusion Matrix
+
+maxidx=function(arr) {
+  return(which(arr==max(arr)))}
+idx=apply(dt_predict,c(1),maxidx)
+dtprediction=c('<=50K','>50K')[idx]
+dt_confmat=table(dtprediction,mds_test$comp_level)
+dt_accuracy=sum(diag(dt_confmat))/sum(dt_confmat)
+
+cat("\n Accuracy of decision tree model: ",round(dt_accuracy*100,2),"%")
+```
+
+#Naive Bayes
+```{r}
+nb=naiveBayes(comp_level~.,data=mds_train)
+nb_predict=predict(nb,mds_test[,-15])
+nb_confmat=table(nb_predict,mds_test$comp_level)
+nb_accuracy=sum(diag(nb_confmat))/sum(nb_confmat)
+
+cat("\n Accuracy of Naive Bayes Model:",round(nb_accuracy*100,2),"%")
+```
+
+#kNN
+```{r}
+for(i in 1:15) {
+  mds1[[i]]=as.numeric(mds1[[i]])
+}
+
+mds_train=mds1[sp,]
+mds_test=mds1[-sp,]
+
+mds_train_knn=mds_train[,1:14]
+mds_test_knn=mds_test[,1:14]
+mds_train_label=mds_train[,15]
+mds_test_label=mds_test[,15]
+
+k=7
+knn_model= knn(train=mds_train_knn,test=mds_test_knn,cl=mds_train_label,k)
+knn_confmat=table(mds_test_label,knn_model)
+knn_accuracy= sum(diag(knn_confmat))/sum(knn_confmat)
+
+cat("\n k Value=",k," Accuracy of kNN Model=",round(knn_accuracy*100,2),"%")
+```
